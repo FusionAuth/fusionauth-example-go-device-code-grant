@@ -28,13 +28,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "getgif",
 	Short: "A small CLI tool to fetch Gifs only once the user is authenticated.",
-	Long: `A small CLI tool to fetch Gifs only once the user is authenticated.`,
+	Long:  `A small CLI tool to fetch Gifs only once the user is authenticated.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,8 +45,7 @@ func Execute() {
 }
 
 func init() {
-	// cobra.OnInitialize()
-
 	rootCmd.AddCommand(LoginCmd)
 	rootCmd.AddCommand(FetchCmd)
+	rootCmd.AddCommand(CleanCmd)
 }

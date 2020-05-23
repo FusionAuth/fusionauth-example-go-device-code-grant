@@ -1,16 +1,160 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"time"
 
+	"github.com/FusionAuth/go-client/pkg/fusionauth"
+	"github.com/fatih/color"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 )
+
+const (
+	host   string = "http://localhost:9011"
+	apiKey string = "vB_ap-t-zsCbOYv9HhETbbRm1Ue8C3FFP28qJQWfNTo"
+
+	// ClientID is the OAuth client_id of our FA Application
+	ClientID string = "7dde5f47-5000-4580-8003-b3b8d1cbe2e9"
+
+	// TenantID is the ID of our FA instance's default Tenant
+	TenantID string = "8caf6467-fb94-6b02-e19c-46536e8e62ad"
+
+	grantType string = "urn:ietf:params:oauth:grant-type:device_code"
+)
+
+var (
+	httpClient = &http.Client{
+		Timeout: time.Second * 10,
+	}
+	baseURL, _                              = url.Parse(host)
+	faClient   *fusionauth.FusionAuthClient = fusionauth.NewClient(httpClient, baseURL, apiKey)
+)
+
+// /oauth2/device?client_id=8cc4c901-1852-4e62-a655-699f2c94ffdc&tenantId=8caf6467-fb94-6b02-e19c-46536e8e62ad
 
 // LoginCmd provide the Cobra sub command for logging into the FA server.
 var LoginCmd = &cobra.Command{
 	Use:   "login [no options!]",
 	Short: "Login to the FA server using the OAuth device code grant type.",
 	Run: func(cmd *cobra.Command, args []string) {
-      fmt.Printf("Inside login - Running with args: %v\n", args)
-    },
+		openIDConfig, err := faClient.RetrieveOpenIdConfiguration()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		deviceResp, err := startDeviceGrantFlow(openIDConfig.DeviceAuthorizationEndpoint)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		informUserAndOpenBrowser(deviceResp)
+
+		accessToken, err := startPolling(openIDConfig.TokenEndpoint, deviceResp)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fetchAndSaveUser(accessToken)
+	},
+}
+
+func startDeviceGrantFlow(deviceAuthEndpoint string) (*fusionauth.DeviceResponse, error) {
+	var result *fusionauth.DeviceResponse = &fusionauth.DeviceResponse{}
+
+	resp, err := http.PostForm(deviceAuthEndpoint, url.Values{
+		"client_id":            {"7dde5f47-5000-4580-8003-b3b8d1cbe2e9"},
+		"scope":                {"offline_access"},
+		"metaData.device.name": {"Golang CLI App"},
+		"metaData.device.type": {string(fusionauth.DeviceType_OTHER)},
+	})
+
+	if err != nil {
+		return result, err
+	}
+
+	defer resp.Body.Close()
+	json.NewDecoder(resp.Body).Decode(result)
+
+	return result, nil
+}
+
+func informUserAndOpenBrowser(deviceResp *fusionauth.DeviceResponse) {
+	cyan := color.New(color.FgCyan)
+	cyan.Printf("Your User Code is: ")
+
+	red := color.New(color.FgRed, color.Bold)
+	red.Printf("%s\n", deviceResp.UserCode)
+
+	fmt.Printf("Opening browser for code entry...\n")
+
+	// Wait a few seconds to give user a chance to check out the printed user code.
+	time.Sleep(3 * time.Second)
+
+	url := fmt.Sprintf("%s/oauth2/device?client_id=%s&tenantId=%s", host, ClientID, TenantID)
+	open.Run(url)
+}
+
+func startPolling(tokenEndpoint string, deviceResp *fusionauth.DeviceResponse) (*fusionauth.AccessToken, error) {
+	var result *fusionauth.AccessToken = &fusionauth.AccessToken{}
+	retryInterval := deviceResp.Interval
+	yellow := color.New(color.FgYellow, color.Bold)
+	blue := color.New(color.FgBlue, color.Bold)
+
+	for {
+		resp, err := pollRequest(tokenEndpoint, deviceResp.DeviceCode)
+
+		if err != nil {
+			return result, err
+		}
+
+		if resp.StatusCode == http.StatusBadRequest {
+
+			// Sleep for the retry interval and print a dot for each second.
+			for i := 0; i < retryInterval; i++ {
+				if i == 0 {
+					blue.Printf(".")
+				} else {
+					yellow.Printf(".")
+				}
+				time.Sleep(time.Second)
+			}
+
+			continue
+		}
+
+		fmt.Printf("\n")
+		defer resp.Body.Close()
+		json.NewDecoder(resp.Body).Decode(result)
+
+		return result, nil
+	}
+}
+
+func pollRequest(tokenEndpoint string, deviceCode string) (*http.Response, error) {
+	requestBody := url.Values{
+		"device_code": {deviceCode},
+		"grant_type":  {grantType},
+		"client_id":   {ClientID},
+	}
+	resp, err := http.PostForm(tokenEndpoint, requestBody)
+
+	return resp, err
+}
+
+func fetchAndSaveUser(token *fusionauth.AccessToken) {
+	resp, _, err := faClient.RetrieveUserUsingJWT(token.AccessToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Save our User object for later usage in fetch
+	Save("/tmp/getgif.json", resp.User)
+
+	mag := color.New(color.FgMagenta)
+	mag.Printf("You successfully authenticated! You can now use `getgif fetch`!\n")
 }
