@@ -32,7 +32,11 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "getgif",
 	Short: "A small CLI tool to fetch Gifs only once the user is authenticated.",
-	Long:  `A small CLI tool to fetch Gifs only once the user is authenticated.`,
+	Long: `
+A small CLI tool to fetch Gifs only once the user is authenticated.
+This is an example application showing off the FusionAuth service and their golang client library.
+You can read the accompanying blog post @ TODO.
+`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -46,6 +50,6 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(LoginCmd)
+	rootCmd.AddCommand(LogoutCmd)
 	rootCmd.AddCommand(FetchCmd)
-	rootCmd.AddCommand(CleanCmd)
 }
