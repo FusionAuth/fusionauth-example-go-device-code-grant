@@ -23,8 +23,6 @@ const (
 
 	// TenantID is the ID of our FA instance's default Tenant
 	TenantID string = "8caf6467-fb94-6b02-e19c-46536e8e62ad"
-
-	grantType string = "urn:ietf:params:oauth:grant-type:device_code"
 )
 
 var (
@@ -104,7 +102,11 @@ func startPolling(tokenEndpoint string, deviceCode string, retryInterval int) (*
 	blue := color.New(color.FgBlue, color.Bold)
 
 	for {
-		resp, err := pollRequest(tokenEndpoint, deviceCode)
+		resp, err := http.PostForm(tokenEndpoint, url.Values{
+			"device_code": {deviceCode},
+			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+			"client_id":   {ClientID},
+		})
 
 		if err != nil {
 			return result, err
@@ -133,17 +135,6 @@ func startPolling(tokenEndpoint string, deviceCode string, retryInterval int) (*
 
 		return result, nil
 	}
-}
-
-func pollRequest(tokenEndpoint string, deviceCode string) (*http.Response, error) {
-	requestBody := url.Values{
-		"device_code": {deviceCode},
-		"grant_type":  {grantType},
-		"client_id":   {ClientID},
-	}
-	resp, err := http.PostForm(tokenEndpoint, requestBody)
-
-	return resp, err
 }
 
 func fetchAndSaveUser(token *fusionauth.AccessToken) {
