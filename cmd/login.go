@@ -31,17 +31,16 @@ var (
 	httpClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	baseURL, _                              = url.Parse(host)
-	faClient   *fusionauth.FusionAuthClient = fusionauth.NewClient(httpClient, baseURL, apiKey)
+	baseURL, _ = url.Parse(host)
+	faClient   *fusionauth.FusionAuthClient
 )
 
-// /oauth2/device?client_id=8cc4c901-1852-4e62-a655-699f2c94ffdc&tenantId=8caf6467-fb94-6b02-e19c-46536e8e62ad
-
-// LoginCmd provide the Cobra sub command for logging into the FA server.
+// LoginCmd provides the subcommand for logging into the FA server using the Device Flow.
 var LoginCmd = &cobra.Command{
 	Use:   "login [no options!]",
-	Short: "Login to the FA server using the OAuth device code grant type.",
+	Short: "Login to the FA server using the OAuth Device Flow.",
 	Run: func(cmd *cobra.Command, args []string) {
+		faClient = fusionauth.NewClient(httpClient, baseURL, apiKey)
 		openIDConfig, err := faClient.RetrieveOpenIdConfiguration()
 		if err != nil {
 			log.Fatal(err)
@@ -52,9 +51,9 @@ var LoginCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		informUserAndOpenBrowser(deviceResp)
+		informUserAndOpenBrowser(deviceResp.UserCode)
 
-		accessToken, err := startPolling(openIDConfig.TokenEndpoint, deviceResp)
+		accessToken, err := startPolling(openIDConfig.TokenEndpoint, deviceResp.DeviceCode, deviceResp.Interval)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -83,12 +82,12 @@ func startDeviceGrantFlow(deviceAuthEndpoint string) (*fusionauth.DeviceResponse
 	return result, nil
 }
 
-func informUserAndOpenBrowser(deviceResp *fusionauth.DeviceResponse) {
+func informUserAndOpenBrowser(userCode string) {
 	cyan := color.New(color.FgCyan)
 	cyan.Printf("Your User Code is: ")
 
 	red := color.New(color.FgRed, color.Bold)
-	red.Printf("%s\n", deviceResp.UserCode)
+	red.Printf("%s\n", userCode)
 
 	fmt.Printf("Opening browser for code entry...\n")
 
@@ -99,19 +98,20 @@ func informUserAndOpenBrowser(deviceResp *fusionauth.DeviceResponse) {
 	open.Run(url)
 }
 
-func startPolling(tokenEndpoint string, deviceResp *fusionauth.DeviceResponse) (*fusionauth.AccessToken, error) {
+func startPolling(tokenEndpoint string, deviceCode string, retryInterval int) (*fusionauth.AccessToken, error) {
 	var result *fusionauth.AccessToken = &fusionauth.AccessToken{}
-	retryInterval := deviceResp.Interval
 	yellow := color.New(color.FgYellow, color.Bold)
 	blue := color.New(color.FgBlue, color.Bold)
 
 	for {
-		resp, err := pollRequest(tokenEndpoint, deviceResp.DeviceCode)
+		resp, err := pollRequest(tokenEndpoint, deviceCode)
 
 		if err != nil {
 			return result, err
 		}
 
+		// 400 status code (StatusBadRequest) is our sign that the user
+		// hasn't completed their device login yet, sleep and then continue.
 		if resp.StatusCode == http.StatusBadRequest {
 
 			// Sleep for the retry interval and print a dot for each second.
