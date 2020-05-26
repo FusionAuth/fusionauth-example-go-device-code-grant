@@ -27,7 +27,7 @@ type search struct {
 
 // FetchCmd provides the Cobra sub command for fetching a gif. Requires the user to be logged in via `login`.
 var FetchCmd = &cobra.Command{
-	Use:   "fetch [no options!]",
+	Use:   "fetch",
 	Short: "Fetch a random gif from giphy. User must be logged in before using fetch.",
 	Run: func(cmd *cobra.Command, args []string) {
 		var user fusionauth.User = fusionauth.User{}

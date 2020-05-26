@@ -28,8 +28,8 @@ var (
 
 // LoginCmd provides the subcommand for logging into the FA server using the Device Flow.
 var LoginCmd = &cobra.Command{
-	Use:   "login [no options!]",
-	Short: "Login to the FA server using the OAuth Device Flow.",
+	Use:   "login",
+	Short: "Authenticate to the FA server using the OAuth Device Flow.",
 	Run: func(cmd *cobra.Command, args []string) {
 		faClient = fusionauth.NewClient(httpClient, baseURL, APIKey)
 		openIDConfig, err := faClient.RetrieveOpenIdConfiguration()
