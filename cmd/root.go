@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
@@ -65,6 +66,12 @@ func init() {
 	ClientID = os.Getenv("FA_CLIENT_ID")
 	TenantID = os.Getenv("FA_TENANT_ID")
 	APIKey = os.Getenv("FA_API_KEY")
+
+	if ClientID == "TODO" || TenantID == "TODO" || APIKey == "TODO" {
+		red := color.New(color.FgRed, color.Bold)
+		red.Printf("You need to finish the setup and add your FA configuration to `.env`. Do so and come back!\n")
+		os.Exit(1)
+	}
 
 	rootCmd.AddCommand(LoginCmd)
 	rootCmd.AddCommand(LogoutCmd)
