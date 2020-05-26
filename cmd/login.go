@@ -15,14 +15,7 @@ import (
 )
 
 const (
-	host   string = "http://localhost:9011"
-	apiKey string = "vB_ap-t-zsCbOYv9HhETbbRm1Ue8C3FFP28qJQWfNTo"
-
-	// ClientID is the OAuth client_id of our FA Application
-	ClientID string = "7dde5f47-5000-4580-8003-b3b8d1cbe2e9"
-
-	// TenantID is the ID of our FA instance's default Tenant
-	TenantID string = "8caf6467-fb94-6b02-e19c-46536e8e62ad"
+	host string = "http://localhost:9011"
 )
 
 var (
@@ -38,7 +31,7 @@ var LoginCmd = &cobra.Command{
 	Use:   "login [no options!]",
 	Short: "Login to the FA server using the OAuth Device Flow.",
 	Run: func(cmd *cobra.Command, args []string) {
-		faClient = fusionauth.NewClient(httpClient, baseURL, apiKey)
+		faClient = fusionauth.NewClient(httpClient, baseURL, APIKey)
 		openIDConfig, err := faClient.RetrieveOpenIdConfiguration()
 		if err != nil {
 			log.Fatal(err)

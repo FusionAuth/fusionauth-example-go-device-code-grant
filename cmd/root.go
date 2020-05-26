@@ -25,7 +25,19 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+)
+
+var (
+	// APIKey is the FA API Key created in the FA UI under "Settings > API Keys"
+	APIKey string
+
+	// ClientID is the OAuth client_id of our FA Application
+	ClientID string
+
+	// TenantID is the ID of our FA instance's default Tenant
+	TenantID string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -49,6 +61,11 @@ func Execute() {
 }
 
 func init() {
+	godotenv.Load(".env")
+	ClientID = os.Getenv("FA_CLIENT_ID")
+	TenantID = os.Getenv("FA_TENANT_ID")
+	APIKey = os.Getenv("FA_API_KEY")
+
 	rootCmd.AddCommand(LoginCmd)
 	rootCmd.AddCommand(LogoutCmd)
 	rootCmd.AddCommand(FetchCmd)
