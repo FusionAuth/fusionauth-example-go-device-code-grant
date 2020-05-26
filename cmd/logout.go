@@ -12,7 +12,7 @@ var LogoutCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		Remove("/tmp/getgif.json")
 
-		mag := color.New(color.FgMagenta)
-		mag.Printf("You've been logged out!\n")
+		cyan := color.New(color.FgCyan)
+		cyan.Printf("You've been logged out!\n")
 	},
 }

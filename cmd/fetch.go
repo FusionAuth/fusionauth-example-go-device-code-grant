@@ -40,10 +40,16 @@ var FetchCmd = &cobra.Command{
 			red := color.New(color.FgRed, color.Bold)
 			red.Printf("You're not logged in yet! Please use `getgif login` before using `fetch`.\n")
 		} else {
+			cyan := color.New(color.FgCyan)
+			cyan.Printf("Hey %s, looks like you already logged in so fetching your gif now...\n", user.Email)
+
 			gifURL, err := fetchGif()
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			// Wait a couple seconds to give user a chance to read the message above.
+			time.Sleep(2 * time.Second)
 
 			open.Run(gifURL)
 		}

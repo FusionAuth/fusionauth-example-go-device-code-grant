@@ -26,7 +26,7 @@ var (
 	faClient   *fusionauth.FusionAuthClient
 )
 
-// LoginCmd provides the subcommand for logging into the FA server using the Device Flow.
+// LoginCmd provides the command for logging into the FA server using the Device Flow.
 var LoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate to the FA server using the OAuth Device Flow.",
@@ -57,7 +57,7 @@ func startDeviceGrantFlow(deviceAuthEndpoint string) (*fusionauth.DeviceResponse
 	var result *fusionauth.DeviceResponse = &fusionauth.DeviceResponse{}
 
 	resp, err := http.PostForm(deviceAuthEndpoint, url.Values{
-		"client_id":            {"7dde5f47-5000-4580-8003-b3b8d1cbe2e9"},
+		"client_id":            {ClientID},
 		"scope":                {"offline_access"},
 		"metaData.device.name": {"Golang CLI App"},
 		"metaData.device.type": {string(fusionauth.DeviceType_OTHER)},
@@ -77,10 +77,10 @@ func informUserAndOpenBrowser(userCode string) {
 	cyan := color.New(color.FgCyan)
 	cyan.Printf("Your User Code is: ")
 
-	red := color.New(color.FgRed, color.Bold)
-	red.Printf("%s\n", userCode)
+	yellow := color.New(color.FgYellow, color.Bold)
+	yellow.Printf("%s\n", userCode)
 
-	fmt.Printf("Opening browser for code entry...\n")
+	cyan.Printf("Opening browser for code entry...\n")
 
 	// Wait a few seconds to give user a chance to check out the printed user code.
 	time.Sleep(3 * time.Second)
@@ -139,6 +139,6 @@ func fetchAndSaveUser(token *fusionauth.AccessToken) {
 	// Save our User object for later usage in fetch
 	Save("/tmp/getgif.json", resp.User)
 
-	mag := color.New(color.FgMagenta)
-	mag.Printf("You successfully authenticated! You can now use `getgif fetch`!\n")
+	cyan := color.New(color.FgCyan)
+	cyan.Printf("You successfully authenticated! You can now use `getgif fetch`!\n")
 }
