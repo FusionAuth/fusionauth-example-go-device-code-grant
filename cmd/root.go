@@ -48,7 +48,7 @@ var rootCmd = &cobra.Command{
 	Long: `
 A small CLI tool to fetch Gifs only once the user is authenticated.
 This is an example application showing off the FusionAuth service and their golang client library.
-You can read the accompanying blog post @ TODO.
+You can read the accompanying blog post @ https://fusionauth.io/blog/2020/06/17/building-cli-app-with-device-grant-and-golang
 `,
 }
 
